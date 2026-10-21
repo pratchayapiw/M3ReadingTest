@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ReadAloud Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Kanit:wght@500;600&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: dark ink header band with a step rail; the passage sits on an exercise-book sheet (blue rules, red margin line). */
+:root{
+  --bg:#EDF0F4; --surface:#FFFFFF; --paper:#FFFEF7; --ink:#162030; --muted:#5A6577; --line:#D3DAE3;
+  --rule:#D9E4F1; --margin:#E2474C; --accent:#0B6E69; --accent-soft:#D7EDEB; --on-accent:#FFFFFF;
+  --mark:#FFE14D; --mark-ink:#162030; --ok:#1E8448; --ok-soft:#DDF2E5; --near:#B87406; --near-soft:#FBEFD6;
+  --bad:#C73A2A; --bad-soft:#FBE1DC; --band:#162030; --band-ink:#F2F5F9; --band-muted:#A9B4C4;
+  --f-display:"Kanit","Sarabun",system-ui,sans-serif;
+  --f-body:"Sarabun",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-read:"Atkinson Hyperlegible","Sarabun",Verdana,sans-serif;
+  --r:10px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E131A; --surface:#171F2A; --paper:#1B2430; --ink:#E7ECF2; --muted:#9AA6B6; --line:#2B3646;
+  --rule:#243041; --margin:#B23A3E; --accent:#3DB5AB; --accent-soft:#163B3A; --on-accent:#08201F;
+  --mark:#E8C42A; --mark-ink:#111820; --ok:#4FC47F; --ok-soft:#163323; --near:#E2A63C; --near-soft:#3A2D12;
+  --bad:#F06A5B; --bad-soft:#3D1D19; --band:#090D13; --band-ink:#EEF2F7; --band-muted:#8D99AA; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E131A; --surface:#171F2A; --paper:#1B2430; --ink:#E7ECF2; --muted:#9AA6B6; --line:#2B3646;
+  --rule:#243041; --margin:#B23A3E; --accent:#3DB5AB; --accent-soft:#163B3A; --on-accent:#08201F;
+  --mark:#E8C42A; --mark-ink:#111820; --ok:#4FC47F; --ok-soft:#163323; --near:#E2A63C; --near-soft:#3A2D12;
+  --bad:#F06A5B; --bad-soft:#3D1D19; --band:#090D13; --band-ink:#EEF2F7; --band-muted:#8D99AA; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:17px/1.6 var(--f-body);-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;line-height:1.25;margin:0;text-wrap:balance}
+h1{font-size:1.6rem} h2{font-size:1.1rem}
+.en{font-family:var(--f-read);font-weight:400;color:var(--muted);font-size:.8em;margin-left:.4em}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* header band */
+.band{background:var(--band);color:var(--band-ink);position:sticky;top:0;z-index:20;padding-top:env(safe-area-inset-top,0px)}
+.band-in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;flex:1 1 220px}
+.logo{font-family:var(--f-display);font-weight:600;background:var(--mark);color:var(--mark-ink);padding:2px 10px;border-radius:6px;transform:rotate(-3deg);font-size:1.05rem}
+.brand b{display:block;font-family:var(--f-read);letter-spacing:.02em;font-size:1rem}
+.brand small{display:block;color:var(--band-muted);font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46ch}
+.steps{display:flex;gap:6px;flex-wrap:wrap}
+.steps button{display:flex;align-items:center;gap:8px;background:transparent;border:1px solid #ffffff2e;color:var(--band-ink);
+  border-radius:999px;padding:6px 14px 6px 6px;cursor:pointer;font-weight:500}
+.steps button i{font-style:normal;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#ffffff1f;font-family:var(--f-read);font-weight:700}
+.steps button em{font-style:normal;font-size:.8rem;color:var(--band-muted);font-variant-numeric:tabular-nums}
+.steps button.on{background:var(--mark);color:var(--mark-ink);border-color:var(--mark)}
+.steps button.on i{background:var(--mark-ink);color:var(--mark)}
+.steps button.on em{color:var(--mark-ink)}
+.steps button.done i{background:var(--ok);color:#fff}
+.steps button:disabled{opacity:.4;cursor:not-allowed}
+.hbtn{background:transparent;border:1px solid #ffffff2e;color:var(--band-ink);border-radius:8px;padding:6px 12px;cursor:pointer}
+
+.banner{background:var(--near-soft);color:var(--ink);border-bottom:1px solid var(--line);
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));text-align:center;font-weight:500}
+
+.wrap{max-width:1180px;margin:0 auto;padding-block:22px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.view{display:flex;flex-direction:column;gap:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;min-width:0}
+.panel>*+*{margin-top:12px}
+
+/* buttons */
+.btn,button.b{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--surface);
+  border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:600;min-height:46px}
+.btn svg,button.b svg{width:20px;height:20px;flex:none}
+.primary{background:var(--accent)!important;border-color:var(--accent)!important;color:var(--on-accent)!important}
+.big{min-height:56px;font-size:1.1rem;padding:12px 26px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.rec.live{background:var(--bad)!important;border-color:var(--bad)!important;color:#fff!important;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px color-mix(in srgb,var(--bad) 25%,transparent)}}
+
+/* forms */
+label{display:flex;flex-direction:column;gap:4px;font-weight:500;font-size:.95rem;min-width:0}
+input,select,textarea{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 11px;width:100%}
+textarea{font-family:var(--f-read);line-height:1.6;resize:vertical}
+.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.chk{flex-direction:row;align-items:center;gap:8px}
+.chk input{width:22px;height:22px}
+.fine{font-size:.88rem;color:var(--muted)}
+details{border:1px dashed var(--line);border-radius:8px;padding:10px 14px}
+summary{cursor:pointer;font-weight:600}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto;font-size:.78rem;line-height:1.45;max-height:260px}
+
+/* teacher */
+.tgrid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px;align-items:start}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.linkrow{display:flex;gap:8px}
+.linkrow input{font-size:.85rem}
+.stats{display:flex;gap:18px;flex-wrap:wrap}
+.stats div{display:flex;flex-direction:column}
+.stats b{font-family:var(--f-read);font-size:1.6rem;font-variant-numeric:tabular-nums;line-height:1.1}
+.stats span{font-size:.82rem;color:var(--muted)}
+.slist{margin:0;padding-left:1.4em;font-family:var(--f-read);font-size:.95rem}
+.slist li{padding:3px 0}
+.tag{display:inline-block;font-family:var(--f-body);font-size:.75rem;font-weight:600;padding:1px 8px;border-radius:999px;margin-left:6px;vertical-align:1px}
+.tag.rise{background:var(--accent-soft);color:var(--accent)}
+.tag.warn{background:var(--near-soft);color:var(--near)}
+.lib{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.lib li{display:flex;align-items:center;gap:8px;justify-content:space-between;border-bottom:1px solid var(--line);padding:6px 0}
+.lib li span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lib button{border:0;background:none;color:var(--accent);cursor:pointer;font-weight:600}
+
+/* welcome */
+.welcome{max-width:760px;margin:0 auto;width:100%}
+.eyebrow{font-family:var(--f-read);text-transform:uppercase;letter-spacing:.14em;font-size:.8rem;color:var(--accent);font-weight:700;margin:0}
+.howto{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.howto li{border-top:4px solid var(--accent);background:var(--bg);border-radius:0 0 8px 8px;padding:12px}
+.howto b{display:block;font-family:var(--f-display);font-weight:600}
+.howto small{color:var(--muted)}
+
+/* toolbar */
+.toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.tgroup{display:flex;gap:8px;flex-wrap:wrap}
+.mini{flex-direction:row;align-items:center;gap:6px;font-size:.9rem;color:var(--muted)}
+.mini select{width:auto;padding:7px 8px}
+.counter{margin-left:auto;display:flex;align-items:baseline;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 14px}
+.counter span{font-size:.85rem;color:var(--muted)}
+.counter b{font-family:var(--f-read);font-size:1.25rem;font-variant-numeric:tabular-nums}
+.counter.met{border-color:var(--ok);background:var(--ok-soft)}
+.hint{margin:0;color:var(--muted);font-size:.92rem}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:10px 16px;cursor:pointer;font-weight:600;min-height:46px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--ink);color:var(--surface)}
+
+/* the exercise-book sheet */
+.sheet{background:var(--paper);border:1px solid var(--line);border-radius:6px;position:relative;
+  font-family:var(--f-read);font-size:clamp(1.25rem,2.6vw,1.75rem);line-height:2.15;
+  padding:22px 24px 26px 64px;min-width:0;
+  background-image:linear-gradient(to bottom,transparent calc(2.15em - 1px),var(--rule) calc(2.15em - 1px));
+  background-size:100% 2.15em;background-position:0 22px}
+.sheet::before{content:"";position:absolute;top:0;bottom:0;left:44px;border-left:2px solid var(--margin);opacity:.55}
+.sheet p{margin:0 0 0 0}
+.sheet p+p{margin-top:0;text-indent:1.5em}
+.sheet .s{cursor:pointer;border-radius:4px}
+.sheet .w{border-radius:4px;padding:0 1px;transition:background .12s}
+.sheet .w.hl{background:var(--mark);color:var(--mark-ink);box-shadow:0 0 0 2px var(--mark)}
+.sheet .w.ok{color:var(--ok);text-decoration:underline 2px var(--ok);text-underline-offset:5px}
+.sheet .w.near{color:var(--near);text-decoration:underline 2px dotted var(--near);text-underline-offset:5px}
+.sheet .w.bad{color:var(--bad);background:var(--bad-soft);text-decoration:underline 2px wavy var(--bad);text-underline-offset:5px}
+.sheet .w.live{text-decoration:underline 3px var(--accent);text-underline-offset:6px}
+.focusmode.has-focus .w{opacity:.32}
+.focusmode.has-focus .w.focus{opacity:1;background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent-soft)}
+.focusmode.has-focus .w.focus.hl{background:var(--mark)}
+.ibadge{font-family:var(--f-body);font-size:.68rem;font-weight:700;vertical-align:.55em;margin:0 4px;padding:0 6px;border-radius:999px;line-height:1.6;display:inline-block}
+.ibadge.good{background:var(--ok-soft);color:var(--ok)}
+.ibadge.weak{background:var(--near-soft);color:var(--near)}
+
+.roundbar{display:flex;align-items:center;gap:10px}
+.roundbar>div{flex:1;height:10px;background:var(--surface);border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.roundbar>div i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.roundbar span{font-size:.88rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dock{position:sticky;bottom:0;z-index:10;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(6px);padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px))}
+.dock .b{min-width:64px}
+.dock .pos{align-self:center;font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums;min-width:90px;text-align:center}
+.feedback{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 18px;min-height:64px}
+.feedback .score{font-family:var(--f-read);font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums}
+.feedback .heard{font-family:var(--f-read);color:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 10px;font-family:var(--f-read);cursor:pointer}
+.chip svg{width:16px;height:16px}
+.next{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+
+/* test */
+.rules{margin:0;padding-left:1.3em}
+.rules li{padding:3px 0}
+.tprog{display:flex;align-items:center;gap:12px;font-variant-numeric:tabular-nums}
+.tprog .bar{flex:1;height:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.tprog .bar i{display:block;height:100%;background:var(--ink);width:0;transition:width .3s}
+.testcard{background:var(--paper);border:1px solid var(--line);border-left:6px solid var(--margin);border-radius:8px;padding:28px 26px;min-height:230px;
+  display:flex;flex-direction:column;justify-content:center;gap:10px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.tlabel{margin:0;font-weight:600;color:var(--muted)}
+.ttext{font-family:var(--f-read);font-size:clamp(1.5rem,3.6vw,2.3rem);line-height:1.6}
+.ttext.veil{color:transparent;text-shadow:0 0 18px color-mix(in srgb,var(--ink) 55%,transparent)}
+.ttext .num{font-size:2.6em;font-weight:700;letter-spacing:.05em}
+.tctl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:12px;align-items:center}
+.meter,.timer{height:12px;border-radius:999px;background:var(--surface);border:1px solid var(--line);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--ok);transition:width .08s}
+.timer i{display:block;height:100%;width:100%;background:var(--near);transform-origin:left}
+.tctl small{display:block;font-size:.78rem;color:var(--muted)}
+.tbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.tmsg{text-align:center;margin:0;min-height:1.6em;font-weight:500}
+
+/* results */
+.rhead{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,2fr);gap:18px;align-items:center}
+.verdict{font-family:var(--f-display);font-size:2rem;font-weight:600;line-height:1.2}
+.verdict small{display:block;font-family:var(--f-body);font-size:.95rem;font-weight:500;color:var(--muted)}
+.verdict.pass{color:var(--ok)} .verdict.fail{color:var(--bad)} .verdict.review{color:var(--near)}
+.scores{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.sbox{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--bg)}
+.sbox span{display:block;font-size:.82rem;color:var(--muted)}
+.sbox b{font-family:var(--f-read);font-size:2rem;font-variant-numeric:tabular-nums;line-height:1.15}
+.sbox em{font-style:normal;font-size:.8rem;color:var(--muted)}
+.sbox.ok{border-color:var(--ok);background:var(--ok-soft)} .sbox.no{border-color:var(--bad);background:var(--bad-soft)}
+.rmeta{grid-column:1/-1;font-size:.9rem;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap}
+.rmeta b{color:var(--ink);font-family:var(--f-read);letter-spacing:.08em}
+.rgrid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+.wlist{list-style:none;margin:0;padding:0}
+.wlist li{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+.wlist .wd{font-family:var(--f-read);font-weight:700;font-size:1.1rem}
+.wlist small{color:var(--muted);font-size:.82rem;display:block}
+.wlist button{margin-left:auto;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 8px;cursor:pointer;display:flex}
+.wlist button svg{width:18px;height:18px}
+.flags{margin:0;padding-left:1.2em}
+.flags li{padding:2px 0}
+.flags .warn{color:var(--near);font-weight:600}
+audio{width:100%}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,140%);
+  background:var(--ink);color:var(--surface);padding:10px 18px;border-radius:10px;font-weight:500;z-index:50;transition:transform .25s;max-width:calc(100% - 32px)}
+.toast.show{transform:translate(-50%,0)}
+
+@media (max-width:860px){
+  .tgrid,.rgrid,.rhead{grid-template-columns:minmax(0,1fr)}
+  .howto{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:560px){
+  .row3{grid-template-columns:minmax(0,1fr)}
+  .sheet{padding:16px 14px 20px 34px}
+  .sheet::before{left:22px}
+  .counter{margin-left:0}
+  .scores{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .sbox b{font-size:1.5rem}
+  .tctl{grid-template-columns:minmax(0,1fr)}
+  .steps button{padding:4px 10px 4px 4px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header class="band">
+  <div class="band-in">
+    <div class="brand">
+      <span class="logo">อ่าน</span>
+      <div style="min-width:0"><b>ReadAloud Check</b><small id="artTitle">ระบบสอบอ่านออกเสียงภาษาอังกฤษ</small></div>
+    </div>
+    <nav class="steps" id="steps" aria-label="ขั้นตอน">
+      <button type="button" data-step="listen"><i>1</i>ฟัง <em id="stListen"></em></button>
+      <button type="button" data-step="practice"><i>2</i>อ่านตาม <em id="stPractice"></em></button>
+      <button type="button" data-step="test"><i>3</i>สอบ <em id="stTest"></em></button>
+      <button type="button" data-step="result"><i>✓</i>ผล</button>
+    </nav>
+    <button type="button" class="hbtn" id="hTeacher" hidden>กลับโหมดครู</button>
+  </div>
+</header>
+<div id="banner" class="banner" hidden></div>
+
+<main class="wrap">
+
+<!-- ============ TEACHER ============ -->
+<section id="v-teacher" class="view" hidden>
+  <div class="tgrid">
+    <form id="tForm" class="panel" autocomplete="off">
+      <h1>ตั้งค่าบทความสอบอ่าน<span class="en">Teacher setup</span></h1>
+      <label for="fTitle">ชื่อเรื่อง<input id="fTitle"></label>
+      <label for="fText">บทความ <span class="fine">(เว้น 1 บรรทัดเพื่อขึ้นย่อหน้าใหม่)</span><textarea id="fText" rows="9"></textarea></label>
+      <div class="row3">
+        <label for="fLevel">ระดับชั้น<input id="fLevel" placeholder="ม.3"></label>
+        <label for="fPassPron">เกณฑ์ Pronunciation (%)<input id="fPassPron" type="number" min="0" max="100"></label>
+        <label for="fPassInt">เกณฑ์ Intonation (%)<input id="fPassInt" type="number" min="0" max="100"></label>
+      </div>
+      <div class="row3">
+        <label for="fMinListen">ต้องฟังอย่างน้อย (รอบ)<input id="fMinListen" type="number" min="0" max="10"></label>
+        <label for="fMinPractice">ต้องฝึกอ่านตาม (รอบ)<input id="fMinPractice" type="number" min="0" max="10"></label>
+        <label for="fLive">จุดตรวจตัวเลขสุ่ม (ครั้ง)<input id="fLive" type="number" min="0" max="3"></label>
+      </div>
+      <div class="row3">
+        <label for="fLang">สำเนียงเสียงตัวอย่าง/การฟัง
+          <select id="fLang"><option value="en-US">American (en-US)</option><option value="en-GB">British (en-GB)</option></select></label>
+        <label class="chk" for="fShuffle"><input type="checkbox" id="fShuffle"> สลับลำดับประโยคตอนสอบ</label>
+        <span></span>
+      </div>
+      <details>
+        <summary>ส่งผลสอบเข้า Google Sheets ของครู (ไม่บังคับ)</summary>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+          <label for="fSheet">Web App URL ของ Apps Script<input id="fSheet" placeholder="https://script.google.com/macros/s/…/exec"></label>
+          <label class="chk" for="fAudio"><input type="checkbox" id="fAudio"> แนบไฟล์เสียงการสอบไปเก็บใน Google Drive</label>
+          <p class="fine">วิธีตั้งค่า: เปิด Google Sheets ใหม่ → ส่วนขยาย → Apps Script → วางโค้ดนี้ → ทำให้ใช้งานได้ → เว็บแอป (ผู้มีสิทธิ์เข้าถึง: ทุกคน) → คัดลอก URL มาวางด้านบน</p>
+          <pre id="gsCode"></pre>
+          <div><button type="button" class="b" id="bCopyCode">คัดลอกโค้ด Apps Script</button></div>
+        </div>
+      </details>
+      <div class="actions">
+        <button type="button" class="b" id="bPreview">ทดลองเป็นนักเรียน</button>
+        <button type="button" class="b primary" id="bLink">สร้างลิงก์ให้นักเรียน</button>
+      </div>
+      <div id="linkOut" hidden>
+        <div class="linkrow"><input id="linkBox" readonly aria-label="ลิงก์สำหรับนักเรียน"><button type="button" class="b" id="bCopy">คัดลอก</button></div>
+        <p class="fine" id="linkNote"></p>
+      </div>
+    </form>
+    <aside class="panel">
+      <h2>ตรวจบทความก่อนใช้</h2>
+      <div class="stats" id="tStats"></div>
+      <ol class="slist" id="tSents"></ol>
+      <h2>บทความที่บันทึกไว้ในเครื่องนี้</h2>
+      <ul class="lib" id="tLib"></ul>
+    </aside>
+  </div>
+</section>
+
+<!-- ============ WELCOME ============ -->
+<section id="v-welcome" class="view" hidden>
+  <div class="panel welcome">
+    <p class="eyebrow">Reading Test</p>
+    <h1 id="wTitle"></h1>
+    <p id="wMeta" class="fine"></p>
+    <ol class="howto" id="wHow"></ol>
+    <div class="row3">
+      <label for="sName">ชื่อ-นามสกุล<input id="sName"></label>
+      <label for="sClass">ห้อง<input id="sClass" placeholder="ม.3/1"></label>
+      <label for="sNo">เลขที่<input id="sNo" inputmode="numeric"></label>
+    </div>
+    <button type="button" class="b primary big" id="bStart">เริ่มขั้นที่ 1: ฟัง</button>
+    <p class="fine" id="wSupport">ใช้ Google Chrome หรือ Microsoft Edge และอนุญาตให้ใช้ไมโครโฟน ใส่หูฟังหรืออยู่ในที่เงียบจะได้ผลแม่นยำที่สุด</p>
+  </div>
+</section>
+
+<!-- ============ STEP 1: LISTEN ============ -->
+<section id="v-listen" class="view" hidden>
+  <div class="toolbar">
+    <div class="tgroup">
+      <button type="button" class="b primary" id="lPlay"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg><span>เล่นทั้งบท</span></button>
+      <button type="button" class="b" id="lStop"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>เริ่มใหม่</button>
+    </div>
+    <label class="mini" for="lRate">ความเร็ว<select id="lRate" class="rateSel"></select></label>
+    <label class="mini" for="lVoice">เสียง<select id="lVoice"></select></label>
+    <div class="counter" id="lCounter"><span>ฟังจบทั้งบท</span><b id="lCount">0/2</b></div>
+  </div>
+  <p class="hint">ไฮไลต์สีเหลืองบอกว่ากำลังอ่านถึงคำไหน · แตะประโยคใดก็ได้เพื่อฟังเฉพาะประโยคนั้น (ไม่นับรอบ) · นับ 1 รอบเมื่อฟังจนจบทั้งบท</p>
+  <article class="sheet" id="lPassage"></article>
+  <div class="next"><button type="button" class="b primary big" id="lNext" disabled>ขั้นที่ 2: อ่านตาม</button></div>
+</section>
+
+<!-- ============ STEP 2: PRACTICE ============ -->
+<section id="v-practice" class="view" hidden>
+  <div class="toolbar">
+    <div class="seg" id="pMode" role="group" aria-label="หน่วยการฝึก">
+      <button type="button" data-mode="word">ทีละคำ</button>
+      <button type="button" data-mode="phrase">ทีละวลี</button>
+      <button type="button" data-mode="sentence">ทีละประโยค</button>
+    </div>
+    <label class="mini" for="pRate">ความเร็ว<select id="pRate" class="rateSel"></select></label>
+    <div class="counter" id="pCounter"><span>ฝึกครบ</span><b id="pCount">0/2</b></div>
+  </div>
+  <div class="roundbar"><div><i id="pRound"></i></div><span id="pRoundTxt"></span></div>
+  <article class="sheet focusmode" id="pPassage"></article>
+  <div class="feedback" id="pFeed"><span class="fine">กด <b>ฟัง</b> เพื่อฟังตัวอย่าง แล้วกด <b>อ่าน</b> และอ่านออกเสียงส่วนที่ไฮไลต์ ระบบจะบอกทันทีว่าคำไหนชัด คำไหนต้องแก้ · แตะคำในบทความเพื่อข้ามไปฝึกตรงนั้น</span></div>
+  <div class="dock">
+    <button type="button" class="b" id="pPrev" aria-label="ส่วนก่อนหน้า"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 5 8 12l7.5 7z"/></svg></button>
+    <button type="button" class="b" id="pHear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" stroke-linecap="round"/></svg>ฟัง</button>
+    <span class="pos" id="pPos"></span>
+    <button type="button" class="b primary rec" id="pRead"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg><span>อ่าน</span></button>
+    <button type="button" class="b" id="pNext" aria-label="ส่วนถัดไป"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 5 16 12l-7.5 7z"/></svg></button>
+  </div>
+  <div class="next"><button type="button" class="b primary big" id="pGo" disabled>ขั้นที่ 3: สอบ</button></div>
+</section>
+
+<!-- ============ STEP 3: TEST ============ -->
+<section id="v-test" class="view" hidden>
+  <div class="panel" id="tIntro" style="max-width:780px;margin:0 auto;width:100%">
+    <p class="eyebrow">Final reading test</p>
+    <h1>สอบอ่านออกเสียง</h1>
+    <ul class="rules">
+      <li>ช่วงสอบ <b>ไม่มีเสียงตัวอย่าง</b> นักเรียนต้องอ่านเอง</li>
+      <li>ข้อความจะถูกซ่อนไว้ กด <b>เริ่มอ่าน</b> แล้วข้อความจะปรากฏพร้อมเปิดไมค์ ให้อ่านทันที</li>
+      <li>มีเวลาจำกัดต่อประโยค และอาจมี <b>ตัวเลขสุ่ม</b> ให้พูดเป็นภาษาอังกฤษเพื่อยืนยันว่าอ่านเอง</li>
+      <li>ระบบบันทึกเสียงตลอดการสอบ และบันทึกเมื่อออกจากหน้าจอนี้ ครูสามารถเปิดฟังย้อนหลังได้</li>
+      <li>ไม่ต้องสำเนียงเป๊ะ แต่ต้องออกเสียงคำให้ถูกและขึ้น-ลงเสียงตามประโยค (ผ่านที่ <b id="tPassTxt">70%</b>)</li>
+    </ul>
+    <button type="button" class="b primary big" id="bBeginTest">พร้อมแล้ว เริ่มสอบ</button>
+    <p class="fine" id="tIntroMsg"></p>
+  </div>
+  <div id="tRun" hidden style="display:flex;flex-direction:column;gap:16px">
+    <div class="tprog"><span id="tPos"></span><div class="bar"><i id="tBar"></i></div></div>
+    <div class="testcard" id="tCard"><p class="tlabel" id="tLabel"></p><div class="ttext" id="tText"></div></div>
+    <div class="tctl">
+      <div><small>ระดับเสียงไมค์</small><div class="meter"><i id="tLevel"></i></div></div>
+      <div><small>เวลาที่เหลือ</small><div class="timer"><i id="tTime"></i></div></div>
+    </div>
+    <div class="tbtns">
+      <button type="button" class="b primary big" id="tGo">เริ่มอ่าน</button>
+      <button type="button" class="b big" id="tDone" hidden>อ่านจบแล้ว</button>
+    </div>
+    <p class="tmsg" id="tMsg"></p>
+  </div>
+</section>
+
+<!-- ============ RESULT ============ -->
+<section id="v-result" class="view" hidden>
+  <div class="panel rhead">
+    <div class="verdict" id="rVerdict"></div>
+    <div class="scores" id="rScores"></div>
+    <div class="rmeta" id="rMeta"></div>
+  </div>
+  <div class="rgrid">
+    <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+      <div class="legend"><span><i style="background:var(--ok)"></i>ออกเสียงถูก</span><span><i style="background:var(--near)"></i>ใกล้เคียง (ผ่าน)</span><span><i style="background:var(--bad)"></i>ต้องแก้</span><span>↘ ↗ = การขึ้น-ลงเสียงท้ายประโยค</span></div>
+      <article class="sheet" id="rPassage"></article>
+    </div>
+    <aside class="panel">
+      <h2>คำที่ต้องฝึกเพิ่ม</h2>
+      <ul class="wlist" id="rWrong"></ul>
+      <h2>ข้อสังเกตสำหรับครู</h2>
+      <ul class="flags" id="rFlags"></ul>
+      <h2>เสียงการสอบ</h2>
+      <audio id="rAudio" controls></audio>
+      <p class="fine" id="rSend"></p>
+    </aside>
+  </div>
+  <div class="next">
+    <button type="button" class="b" id="rPractice">กลับไปฝึกอ่านตาม</button>
+    <button type="button" class="b primary" id="rRetry">สอบอีกครั้ง</button>
+  </div>
+</section>
+</main>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<!-- ================= CORE (pure functions) ================= -->
+<script id="core">
+'use strict';
+const NUM_ONES=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+const NUM_TENS=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+function numWords(n){n=+n;if(!isFinite(n)||n<0||n>999999)return String(n);
+  if(n<20)return NUM_ONES[n];
+  if(n<100)return NUM_TENS[Math.floor(n/10)]+(n%10?NUM_ONES[n%10]:'');
+  if(n<1000)return NUM_ONES[Math.floor(n/100)]+'hundred'+(n%100?numWords(n%100):'');
+  return numWords(Math.floor(n/1000))+'thousand'+(n%1000?numWords(n%1000):'');}
+function norm(w){w=String(w).toLowerCase().replace(/[’‘`]/g,"'").replace(/[^a-z0-9']/g,'').replace(/^'+|'+$/g,'');
+  if(/^\d+$/.test(w))return numWords(w);return w;}
+function phon(w){
+  w=String(w).toLowerCase().replace(/[^a-z]/g,'');if(!w)return '';
+  w=w.replace(/^(kn|gn|pn|wr|ps)/,m=>m[1]).replace(/^x/,'s').replace(/^wh/,'w').replace(/mb$/,'m')
+   .replace(/tch/g,'X').replace(/ch/g,'X').replace(/sh/g,'X').replace(/ti(?=[ao])/g,'X').replace(/si(?=[ao])/g,'X')
+   .replace(/ph/g,'f').replace(/th/g,'0').replace(/gh(?=[^aeiou]|$)/g,'').replace(/ck/g,'k').replace(/dg(?=[eiy])/g,'j')
+   .replace(/c(?=[iey])/g,'s').replace(/c/g,'k').replace(/q/g,'k').replace(/x/g,'ks').replace(/g(?=[eiy])/g,'j')
+   .replace(/z/g,'s').replace(/v/g,'f').replace(/b/g,'p').replace(/d/g,'t').replace(/g/g,'k').replace(/r/g,'l');
+  const first=w[0];const rest=w.slice(1).replace(/[aeiouyhw]/g,'');
+  return (first+rest).replace(/(.)\1+/g,'$1');}
+function lev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let prev=new Array(n+1),cur=new Array(n+1);
+  for(let j=0;j<=n;j++)prev[j]=j;
+  for(let i=1;i<=m;i++){cur[0]=i;for(let j=1;j<=n;j++){cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));}[prev,cur]=[cur,prev];}
+  return prev[n];}
+function sim(t,h){if(!t||!h)return 0;const a=t.replace(/'/g,''),b=h.replace(/'/g,'');if(a===b)return 1;
+  const r=1-lev(a,b)/Math.max(a.length,b.length);const pa=phon(a),pb=phon(b);
+  if(pa&&pa===pb&&Math.min(a.length,b.length)>=2)return Math.max(0.9,r);return r;}
+/* align target words with what the recogniser heard; returns per-target {score, heard} */
+function align(target,hyp){
+  const n=target.length,m=hyp.length;const dp=[],bt=[];
+  for(let i=0;i<=n;i++){dp.push(new Float64Array(m+1));bt.push(new Int8Array(m+1));}
+  const S=new Map();const sm=(i,j)=>{const k=i*4096+j;if(!S.has(k))S.set(k,sim(target[i],hyp[j]));return S.get(k);};
+  for(let i=0;i<=n;i++)for(let j=0;j<=m;j++){if(!i&&!j)continue;let best=-1e9,code=0;
+    if(i>0&&dp[i-1][j]>best){best=dp[i-1][j];code=1;}
+    if(j>0&&dp[i][j-1]>best){best=dp[i][j-1];code=2;}
+    if(i>0&&j>0){const s=sm(i-1,j-1);if(s>=0.5&&dp[i-1][j-1]+s>best){best=dp[i-1][j-1]+s;code=3;}}
+    if(i>0&&j>1){const s=sim(target[i-1],hyp[j-2]+hyp[j-1]);if(s>=0.8&&dp[i-1][j-2]+s>best+1e-6){best=dp[i-1][j-2]+s;code=4;}}
+    dp[i][j]=best;bt[i][j]=code;}
+  const res=target.map(()=>({score:0,heard:'',h:-1}));let i=n,j=m;
+  while(i>0||j>0){const c=bt[i][j];
+    if(c===1)i--;else if(c===2)j--;
+    else if(c===3){res[i-1]={score:sm(i-1,j-1),heard:hyp[j-1],h:j-1};i--;j--;}
+    else if(c===4){res[i-1]={score:sim(target[i-1],hyp[j-2]+hyp[j-1]),heard:hyp[j-2]+' '+hyp[j-1],h:j-2};i--;j-=2;}
+    else break;}
+  // fill "heard as" for missed runs when the gap sizes line up
+  let k=0;while(k<n){if(res[k].h>=0){k++;continue;}let e=k;while(e<n&&res[e].h<0)e++;
+    const lo=k>0?(res[k-1].h+(res[k-1].heard.includes(' ')?2:1)):0;const hi=e<n?res[e].h:m;
+    const gap=hyp.slice(lo,hi);
+    if(gap.length===e-k)for(let x=k;x<e;x++)res[x].heard=gap[x-k];
+    else if(e-k===1&&gap.length)res[k].heard=gap.join(' ');
+    k=e;}
+  return res;}
+const WH=new Set(['what','where','when','who','whom','whose','why','which','how']);
+function sentenceType(s){const t=s.trim();if(!/\?["”’')\]]*$/.test(t))return 'fall';
+  const body=t.replace(/[?"”’')\]\s]+$/,'');const cut=Math.max(body.lastIndexOf('"'),body.lastIndexOf('“'),body.lastIndexOf(','));
+  const clause=body.slice(cut+1).trim();const fw=norm((clause.match(/[A-Za-z']+/)||[''])[0]);
+  return WH.has(fw)?'fall':'rise';}
+function splitSentences(text){const t=String(text).replace(/\s+/g,' ').trim();if(!t)return [];
+  const out=[];const re=/[^.!?]+(?:[.!?]+["”’')\]]*|$)/g;let m;
+  while((m=re.exec(t))){const s=m[0].trim();if(s)out.push(s);}
+  const abbr=/\b(Mr|Mrs|Ms|Dr|St|Mt|vs|etc|Jr|Sr)\.$/i;const merged=[];
+  for(const s of out){if(merged.length&&abbr.test(merged[merged.length-1]))merged[merged.length-1]+=' '+s;
+    else if(merged.length&&/^["”’')\]]+$/.test(s))merged[merged.length-1]+=s;else merged.push(s);}
+  return merged;}
+function tokenize(sentence){const parts=[];const re=/[A-Za-z0-9]+(?:['’.\-][A-Za-z0-9]+)*/g;let last=0,m;
+  while((m=re.exec(sentence))){if(m.index>last)parts.push({t:'p',raw:sentence.slice(last,m.index)});
+    parts.push({t:'w',raw:m[0],start:m.index,end:m.index+m[0].length,n:norm(m[0])});last=re.lastIndex;}
+  if(last<sentence.length)parts.push({t:'p',raw:sentence.slice(last)});return parts;}
+function buildDoc(text){
+  const paras=String(text).replace(/\r/g,'').split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean);const sentences=[];
+  paras.forEach((p,pi)=>splitSentences(p).forEach(st=>{const parts=tokenize(st);const words=parts.filter(x=>x.t==='w');
+    words.forEach((w,wi)=>w.wi=wi);if(words.length)sentences.push({i:sentences.length,para:pi,text:st,parts,words,type:sentenceType(st)});}));
+  return {sentences,total:sentences.reduce((a,s)=>a+s.words.length,0)};}
+const BREAK=new Set(['and','but','or','so','because','when','while','if','that','which','who','where','to','in','on','at','for','with','from','of','by','after','before','about','than','then','until','into']);
+function buildChunks(sentences,mode){const chunks=[];
+  for(const S of sentences){
+    if(mode==='sentence'){chunks.push({s:S.i,a:0,b:S.words.length-1});continue;}
+    if(mode==='word'){S.words.forEach((w,k)=>chunks.push({s:S.i,a:k,b:k}));continue;}
+    const local=[];let cur=[];const flush=()=>{if(cur.length){local.push([cur[0],cur[cur.length-1]]);cur=[];}};
+    for(const p of S.parts){
+      if(p.t!=='w'){if(/[,;:—–]/.test(p.raw)||(/["“”]/.test(p.raw)&&cur.length>=2))flush();continue;}
+      if(cur.length>=2&&BREAK.has(p.n))flush();cur.push(p.wi);if(cur.length>=6)flush();}
+    flush();
+    const merged=[];for(const c of local){const prev=merged[merged.length-1];
+      if(prev&&c[1]-c[0]===0&&prev[1]-prev[0]<=3)prev[1]=c[1];else merged.push(c.slice());}
+    if(merged.length>1){const f=merged[0];if(f[1]-f[0]===0&&merged[1][1]-merged[1][0]<=3){merged[1][0]=f[0];merged.shift();}}
+    merged.forEach(c=>chunks.push({s:S.i,a:c[0],b:c[1]}));}
+  return chunks;}
+function median(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y);const h=s.length>>1;return s.length%2?s[h]:(s[h-1]+s[h])/2;}
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+/* autocorrelation pitch tracker: returns Hz, or 0 when unvoiced/silent */
+function detectPitch(buf,sr){const N=buf.length;let e=0;for(let i=0;i<N;i++)e+=buf[i]*buf[i];if(Math.sqrt(e/N)<0.01)return 0;
+  const minLag=Math.floor(sr/420),maxLag=Math.min(Math.floor(sr/70),N-64);const W=N-maxLag;if(W<64)return 0;
+  const corr=new Float32Array(maxLag+2);let best=0,e0=0;for(let i=0;i<W;i++)e0+=buf[i]*buf[i];
+  for(let lag=minLag;lag<=maxLag;lag++){let s=0,e1=0;for(let i=0;i<W;i++){const b=buf[i+lag];s+=buf[i]*b;e1+=b*b;}
+    const c=s/Math.sqrt(e0*e1+1e-12);corr[lag]=c;if(c>best)best=c;}
+  if(best<0.55)return 0;
+  for(let lag=minLag+1;lag<maxLag;lag++){const c=corr[lag];if(c>=best*0.9&&c>=corr[lag-1]&&c>=corr[lag+1]){
+    const a=corr[lag-1],cc=corr[lag+1],den=a-2*c+cc;const sh=den?0.5*(a-cc)/den:0;return sr/(lag+sh);}}
+  return 0;}
+function cleanPitch(arr){const v=arr.filter(f=>f>0);if(v.length<3)return v;const m=median(v);
+  const k=v.filter(f=>f>m*0.55&&f<m*1.8);return k.map((f,i)=>median(k.slice(Math.max(0,i-2),i+3)));}
+/* intonation: final contour direction vs. expected (fall for statements & wh-questions, rise for yes/no) + pitch movement (not monotone) */
+function intonationScore(f0,type){if(!f0||f0.length<8)return null;const m=median(f0);const st=f0.map(f=>12*Math.log2(f/m));
+  const mean=st.reduce((a,b)=>a+b,0)/st.length;const sd=Math.sqrt(st.reduce((a,b)=>a+(b-mean)**2,0)/st.length);
+  const n=st.length;const tail=st.slice(Math.floor(n*0.78));const body=st.slice(Math.floor(n*0.2),Math.floor(n*0.7));
+  const d=median(tail)-median(body.length?body:st);const varScore=clamp((sd-0.7)/1.3,0,1);
+  const endScore=type==='rise'?clamp((d+0.5)/2.0,0,1):clamp((0.8-d)/1.8,0,1);
+  return {score:Math.round((0.55*endScore+0.45*varScore)*100),end:d>0.6?'rise':d<-0.6?'fall':'level',d:+d.toFixed(2),sd:+sd.toFixed(2)};}
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(36);}
+function b64e(str){const bytes=new TextEncoder().encode(str);let bin='';bytes.forEach(b=>bin+=String.fromCharCode(b));
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function b64d(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const bin=atob(s);
+  return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)));}
+if(typeof module!=='undefined')module.exports={numWords,norm,phon,sim,align,sentenceType,splitSentences,tokenize,buildDoc,buildChunks,detectPitch,cleanPitch,intonationScore,b64e,b64d,median};
+</script>
+
+<!-- ================= APP ================= -->
+<script>
+'use strict';
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const synth=window.speechSynthesis||null;
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+const SPEAK_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7" stroke-linecap="round"/></svg>';
+
+const SAMPLE={title:'My Weekend at the Floating Market',level:'ม.3',
+  text:'Last Saturday, my family and I visited the floating market in Damnoen Saduak. We woke up at five o\'clock because the market is busiest in the early morning. The boats were full of fruit, flowers, and noodles.\n\nMy little brother asked, "Can we buy some mango sticky rice?" My mother smiled and bought two boxes for us. Where will we go next weekend? I hope it will be the beach.',
+  passPron:70,passInt:70,minListen:2,minPractice:2,liveness:2,voiceLang:'en-US',shuffle:false,sheetUrl:'',sendAudio:true};
+
+let cfg=null,cfgHash='',D=null,student=null,prog=null,isPreview=false,studentMode=false,activeStop=null,currentView='';
+
+function toast(msg,ms=2600){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),ms);}
+
+/* ---------------- speech synthesis (listen / practice only) ---------------- */
+const TTS={voice:null,rate:0.8,locked:false,gen:0,keep:null,fb:null,
+  list(){return synth?synth.getVoices().filter(v=>/^en([-_]|$)/i.test(v.lang)):[];},
+  pick(lang){const vs=this.list();const L=lang.toLowerCase();const m=v=>v.lang.replace('_','-').toLowerCase().startsWith(L);
+    return vs.find(v=>m(v)&&v.localService)||vs.find(m)||vs[0]||null;},
+  stop(){this.gen++;clearInterval(this.fb);if(synth)synth.cancel();},
+  say(text,onChar){return new Promise(res=>{
+    if(!synth||this.locked){res(false);return;}
+    const g=++this.gen;synth.cancel();clearInterval(this.fb);
+    const u=new SpeechSynthesisUtterance(text);if(this.voice)u.voice=this.voice;u.lang=this.voice?this.voice.lang:(cfg.voiceLang||'en-US');u.rate=this.rate;
+    this.keep=u;let gotB=false;
+    u.onstart=()=>{onChar&&onChar(0);const t0=performance.now();
+      setTimeout(()=>{if(!gotB&&g===this.gen&&onChar){const cps=14*this.rate;
+        this.fb=setInterval(()=>{if(g!==this.gen){clearInterval(this.fb);return;}onChar(Math.floor((performance.now()-t0)/1000*cps));},80);}},380);};
+    u.onboundary=e=>{if(e.name&&e.name!=='word')return;gotB=true;clearInterval(this.fb);onChar&&onChar(e.charIndex);};
+    u.onend=()=>{clearInterval(this.fb);res(g===this.gen);};
+    u.onerror=()=>{clearInterval(this.fb);res(false);};
+    setTimeout(()=>{if(g===this.gen)synth.speak(u);else res(false);},70);});}};
+
+function fillVoices(){const sel=$('#lVoice');const vs=TTS.list();const keep=TTS.voice&&TTS.voice.name;
+  sel.innerHTML=vs.map((v,i)=>`<option value="${i}">${esc(v.name.replace(/Microsoft |Google /,''))} (${esc(v.lang)})</option>`).join('')||'<option>ไม่มีเสียงในเครื่อง</option>';
+  let v=vs.find(x=>x.name===keep)||TTS.pick(cfg?cfg.voiceLang:'en-US');TTS.voice=v;if(v)sel.value=String(vs.indexOf(v));}
+function fillRates(){const opts=[[0.6,'ช้ามาก'],[0.8,'ช้า'],[0.95,'ปกติ'],[1.1,'เร็ว']];
+  $$('.rateSel').forEach(s=>{s.innerHTML=opts.map(([v,t])=>`<option value="${v}">${t}</option>`).join('');s.value=String(TTS.rate);
+    s.onchange=()=>{TTS.rate=+s.value;$$('.rateSel').forEach(o=>o.value=s.value);};});}
+
+/* ---------------- microphone: level meter, pitch tracking, recording ---------------- */
+const Mic={stream:null,ctx:null,an:null,buf:null,timer:null,frames:[],capturing:false,level:0,disabled:false,denied:'',rec:null,chunks:[],mime:'',onLevel:null,
+  ok(){return !!this.an&&!this.disabled;},
+  async open(){if(this.disabled)return false;if(this.stream)return true;
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return false;
+    try{this.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:true}});}
+    catch(e){this.denied=e.name||'error';return false;}
+    try{const AC=window.AudioContext||window.webkitAudioContext;this.ctx=new AC();try{await this.ctx.resume();}catch(e){}
+      const src=this.ctx.createMediaStreamSource(this.stream);this.an=this.ctx.createAnalyser();this.an.fftSize=2048;src.connect(this.an);
+      this.buf=new Float32Array(this.an.fftSize);this.timer=setInterval(()=>this.tick(),40);}catch(e){this.an=null;}
+    return true;},
+  tick(){if(!this.an)return;this.an.getFloatTimeDomainData(this.buf);let s=0;for(let i=0;i<this.buf.length;i++)s+=this.buf[i]*this.buf[i];
+    this.level=Math.sqrt(s/this.buf.length);if(this.capturing)this.frames.push(detectPitch(this.buf,this.ctx.sampleRate));
+    this.onLevel&&this.onLevel(this.level);},
+  mark(){return this.frames.length;},since(a){return cleanPitch(this.frames.slice(a));},
+  startRec(){if(!this.stream||!window.MediaRecorder)return false;
+    const types=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'];
+    this.mime=types.find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t))||'';
+    try{this.rec=new MediaRecorder(this.stream,this.mime?{mimeType:this.mime,audioBitsPerSecond:32000}:{});}catch(e){this.rec=null;return false;}
+    this.chunks=[];this.rec.ondataavailable=e=>{if(e.data&&e.data.size)this.chunks.push(e.data);};this.rec.start(1000);return true;},
+  stopRec(){return new Promise(res=>{const done=()=>res(this.chunks.length?new Blob(this.chunks,{type:(this.rec&&this.rec.mimeType)||this.mime||'audio/webm'}):null);
+    if(!this.rec||this.rec.state==='inactive'){done();return;}this.rec.onstop=done;try{this.rec.stop();}catch(e){done();}});},
+  release(){clearInterval(this.timer);this.timer=null;try{this.stream&&this.stream.getTracks().forEach(t=>t.stop());}catch(e){}
+    try{this.ctx&&this.ctx.close();}catch(e){}this.stream=null;this.an=null;this.ctx=null;this.capturing=false;}};
+
+/* ---------------- speech recognition ---------------- */
+function listen(target,{maxMs,onInterim,withPitch}){
+  let stopFn=()=>{};
+  const done=new Promise(resolve=>{
+    if(!SR){resolve({error:'unsupported',hyp:[],text:''});return;}
+    const L={finals:new Map(),interim:'',session:0,stopped:false,done:false,firstAt:0,lastAt:0,err:null,t0:performance.now()};
+    const pStart=withPitch&&Mic.ok()?Mic.mark():null;if(pStart!==null)Mic.capturing=true;
+    const vocab=new Set(target.map(x=>x.replace(/'/g,'')));let rec,stopT,idleT,hardT;
+    const hyp=()=>{const arr=[...L.finals.entries()].sort((x,y)=>x[0]-y[0]).map(e=>e[1].trim()).filter(Boolean);const out=[];
+      for(const t of arr){const p=out[out.length-1];const lt=t.toLowerCase();
+        if(p&&lt.startsWith(p.toLowerCase()))out[out.length-1]=t;else if(p&&p.toLowerCase().startsWith(lt)){}else out.push(t);}
+      const txt=(out.join(' ')+' '+L.interim).trim();return {txt,words:txt.split(/\s+/).map(norm).filter(Boolean)};};
+    const pick=r=>{let best=r[0].transcript,bs=-1;for(let k=0;k<r.length;k++){const t=r[k].transcript;
+      const sc=t.split(/\s+/).map(norm).filter(w=>vocab.has(w.replace(/'/g,''))).length;if(sc>bs){bs=sc;best=t;}}return best;};
+    const finish=()=>{if(L.done)return;L.done=true;clearTimeout(stopT);clearInterval(idleT);clearTimeout(hardT);
+      if(pStart!==null)Mic.capturing=false;const h=hyp();
+      resolve({hyp:h.words,text:h.txt,latency:L.firstAt?L.firstAt-L.t0:null,dur:L.firstAt?Math.max(L.lastAt-L.firstAt,400):0,error:L.err,
+        pitch:pStart!==null?Mic.since(pStart):null});};
+    const stop=()=>{if(L.stopped)return;L.stopped=true;try{rec&&rec.stop();}catch(e){}hardT=setTimeout(finish,1600);};
+    stopFn=stop;
+    const make=()=>{rec=new SR();rec.lang=cfg.voiceLang||'en-US';rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=3;
+      const sess=L.session++;
+      rec.onresult=e=>{const now=performance.now();if(!L.firstAt)L.firstAt=now;L.lastAt=now;let inter='';
+        for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)L.finals.set(sess*1000+i,pick(r));else inter+=r[0].transcript+' ';}
+        L.interim=inter.trim();const h=hyp();onInterim&&onInterim(h.words);
+        const al=align(target,h.words);const lastOk=al.length&&al[al.length-1].score>=0.75;
+        const cov=al.filter(x=>x.score>=0.75).length/Math.max(1,al.length);
+        clearTimeout(stopT);if(lastOk||cov>=0.98)stopT=setTimeout(stop,L.interim?1100:650);};
+      rec.onerror=e=>{if(['not-allowed','service-not-allowed','audio-capture','network','language-not-supported'].includes(e.error))L.err=e.error;};
+      rec.onend=()=>{if(!L.stopped&&!L.err&&performance.now()-L.t0<maxMs){try{make();}catch(e){finish();}}else finish();};
+      try{rec.start();}catch(e){L.err='start';finish();}};
+    make();
+    idleT=setInterval(()=>{const now=performance.now();if(now-L.t0>maxMs)stop();
+      else if(L.lastAt&&now-L.lastAt>2800)stop();},250);
+  });
+  return {done,stop:()=>stopFn()};
+}
+async function listenSafe(target,opts){
+  let h=listen(target,opts);activeStop=h.stop;let r=await h.done;
+  if(r.error==='audio-capture'&&Mic.stream){Mic.release();Mic.disabled=true;
+    toast('อุปกรณ์นี้ใช้ไมค์ซ้อนกันไม่ได้ ระบบจะตรวจการออกเสียงต่อ แต่ไม่วัด intonation',4200);
+    h=listen(target,{...opts,withPitch:false});activeStop=h.stop;r=await h.done;}
+  activeStop=null;return r;}
+function srErrorText(e){return {
+  'not-allowed':'ยังไม่ได้อนุญาตไมโครโฟน: แตะไอคอนแม่กุญแจข้างแถบที่อยู่เว็บ → อนุญาตไมโครโฟน แล้วลองใหม่',
+  'service-not-allowed':'เบราว์เซอร์ไม่อนุญาตการรู้จำเสียง ลองใช้ Google Chrome',
+  'network':'การรู้จำเสียงต้องใช้อินเทอร์เน็ต ตรวจการเชื่อมต่อแล้วลองใหม่',
+  'unsupported':'เบราว์เซอร์นี้ไม่รองรับการฟังเสียงพูด ใช้ Google Chrome หรือ Microsoft Edge',
+  'language-not-supported':'เครื่องนี้ไม่รองรับภาษาอังกฤษสำหรับการรู้จำเสียง'}[e]||('ไมค์มีปัญหา ('+e+') ลองใหม่อีกครั้ง');}
+
+/* ---------------- passage rendering ---------------- */
+function renderPassage(el){el.innerHTML='';let cp=-1,pEl=null;
+  for(const s of D.sentences){if(s.para!==cp){pEl=document.createElement('p');el.appendChild(pEl);cp=s.para;}
+    const sp=document.createElement('span');sp.className='s';sp.dataset.s=s.i;
+    for(const part of s.parts){if(part.t==='w'){const w=document.createElement('span');w.className='w';w.dataset.s=s.i;w.dataset.w=part.wi;w.textContent=part.raw;sp.appendChild(w);}
+      else sp.appendChild(document.createTextNode(part.raw));}
+    pEl.appendChild(sp);pEl.appendChild(document.createTextNode(' '));}}
+const W=(el,s,w)=>el.querySelector(`.w[data-s="${s}"][data-w="${w}"]`);
+async function speakRange(el,s,a,b){const S=D.sentences[s];const off=S.words[a].start;const text=S.text.slice(off,S.words[b].end);let cur=null;
+  const mark=k=>{if(cur===k)return;if(cur!==null){const e=W(el,s,cur);e&&e.classList.remove('hl');}cur=k;const e=W(el,s,k);e&&e.classList.add('hl');};
+  const ok=await TTS.say(text,ci=>{const pos=off+ci;let k=a;for(let x=a;x<=b;x++){if(S.words[x].start<=pos)k=x;else break;}mark(k);});
+  if(cur!==null){const e=W(el,s,cur);e&&e.classList.remove('hl');}return ok;}
+
+/* ---------------- progress ---------------- */
+function progKey(){return 'rt:prog:'+cfgHash+':'+(student?hashStr([student.name,student.cls,student.no].join('|').toLowerCase()):'anon');}
+function loadProg(){prog=Object.assign({listens:0,rounds:0,cover:[],attempts:0,last:null},store.get(progKey(),{}));}
+function saveProg(){if(!isPreview)store.set(progKey(),prog);}
+function unlocked(step){if(isPreview)return true;
+  if(step==='listen')return true;
+  if(step==='practice')return prog.listens>=cfg.minListen;
+  if(step==='test')return prog.listens>=cfg.minListen&&prog.rounds>=cfg.minPractice;
+  if(step==='result')return !!prog.last;return false;}
+function updateSteps(){const nav=$('#steps');nav.hidden=!student;if(!student)return;
+  $('#stListen').textContent=`${Math.min(prog.listens,99)}/${cfg.minListen}`;
+  $('#stPractice').textContent=`${Math.min(prog.rounds,99)}/${cfg.minPractice}`;
+  $('#stTest').textContent=prog.attempts?`ครั้งที่ ${prog.attempts}`:'';
+  $$('#steps button').forEach(b=>{const st=b.dataset.step;b.disabled=!unlocked(st)||T.running;b.classList.toggle('on',currentView===st);
+    b.classList.toggle('done',(st==='listen'&&prog.listens>=cfg.minListen)||(st==='practice'&&prog.rounds>=cfg.minPractice));});
+  $('#lCount').textContent=`${prog.listens}/${cfg.minListen}`;$('#lCounter').classList.toggle('met',prog.listens>=cfg.minListen);
+  $('#lNext').disabled=!unlocked('practice');
+  $('#pCount').textContent=`${prog.rounds}/${cfg.minPractice}`;$('#pCounter').classList.toggle('met',prog.rounds>=cfg.minPractice);
+  $('#pGo').disabled=!unlocked('test');
+  const cov=new Set(prog.cover).size;$('#pRound').style.width=(D.total?cov/D.total*100:0)+'%';
+  $('#pRoundTxt').textContent=`รอบที่ ${prog.rounds+1}: ฝึกแล้ว ${cov}/${D.total} คำ`;}
+
+function show(view){
+  if(activeStop){activeStop();}TTS.stop();Listen.active=false;
+  currentView=view;$$('.view').forEach(v=>v.hidden=v.id!=='v-'+view);
+  if(view==='listen')renderListenBtn();
+  if(view==='practice')showChunk();
+  if(view==='test'){$('#tIntro').hidden=false;$('#tRun').hidden=true;$('#tPassTxt').textContent=`Pronunciation ${cfg.passPron}% และ Intonation ${cfg.passInt}%`;$('#tIntroMsg').textContent='';}
+  if(view==='result'&&prog.last)renderResult(prog.last,null);
+  updateSteps();window.scrollTo(0,0);}
+
+/* ---------------- STEP 1: listen ---------------- */
+const Listen={active:false,next:0};
+function renderListenBtn(){$('#lPlay span').textContent=Listen.active?'หยุดชั่วคราว':(Listen.next>0?'เล่นต่อ':'เล่นทั้งบท');}
+async function playAll(){if(Listen.active){Listen.active=false;TTS.stop();renderListenBtn();return;}
+  if(!synth){toast('เครื่องนี้ไม่มีระบบอ่านออกเสียง ลองใช้ Chrome หรือ Edge');return;}
+  Listen.active=true;renderListenBtn();const el=$('#lPassage');
+  for(let s=Listen.next;s<D.sentences.length;s++){Listen.next=s;
+    const ok=await speakRange(el,s,0,D.sentences[s].words.length-1);
+    if(!ok||!Listen.active){Listen.active=false;renderListenBtn();return;}await sleep(280);}
+  Listen.active=false;Listen.next=0;prog.listens++;saveProg();updateSteps();renderListenBtn();
+  toast(prog.listens>=cfg.minListen?`ฟังครบ ${prog.listens} รอบ ไปขั้นอ่านตามได้แล้ว`:`ฟังจบรอบที่ ${prog.listens}`);}
+
+/* ---------------- STEP 2: practice ---------------- */
+const P={mode:'phrase',chunks:[],idx:0,busy:false};
+const MODE_TH={word:'คำ',phrase:'วลี',sentence:'ประโยค'};
+function setMode(m){const prev=P.chunks[P.idx];P.mode=m;P.chunks=buildChunks(D.sentences,m);
+  if(prev){const k=P.chunks.findIndex(c=>c.s===prev.s&&c.a<=prev.a&&c.b>=prev.a);P.idx=k<0?0:k;}else P.idx=0;
+  $$('#pMode button').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));showChunk();}
+function showChunk(){const el=$('#pPassage');if(!P.chunks.length)return;const c=P.chunks[P.idx];
+  $$('.w.focus',el).forEach(w=>w.classList.remove('focus'));el.classList.add('has-focus');
+  for(let k=c.a;k<=c.b;k++){const w=W(el,c.s,k);w&&w.classList.add('focus');}
+  const first=W(el,c.s,c.a);if(first&&first.scrollIntoView){const r=first.getBoundingClientRect();if(r.top<90||r.bottom>innerHeight-120)first.scrollIntoView({block:'center',behavior:'smooth'});}
+  $('#pPos').textContent=`${MODE_TH[P.mode]} ${P.idx+1}/${P.chunks.length}`;
+  $('#pPrev').disabled=P.idx===0;$('#pNext').disabled=P.idx>=P.chunks.length-1;}
+async function practiceHear(){if(P.busy)return;const c=P.chunks[P.idx];await speakRange($('#pPassage'),c.s,c.a,c.b);}
+async function practiceRead(){
+  if(P.busy){activeStop&&activeStop();return;}
+  if(!SR){toast(srErrorText('unsupported'),4000);return;}
+  P.busy=true;TTS.stop();const btn=$('#pRead');btn.classList.add('live');$('span',btn).textContent='กำลังฟัง… แตะเพื่อหยุด';
+  const el=$('#pPassage');const c=P.chunks[P.idx];const S=D.sentences[c.s];const ws=S.words.slice(c.a,c.b+1);const target=ws.map(w=>w.n);
+  ws.forEach((w,k)=>{const e=W(el,c.s,c.a+k);e&&e.classList.remove('ok','near','bad','live');});
+  const wantPitch=P.mode==='sentence';if(wantPitch)await Mic.open();
+  $('#pFeed').innerHTML='<span class="fine">อ่านออกเสียงส่วนที่ไฮไลต์ได้เลย…</span>';
+  const r=await listenSafe(target,{maxMs:3500+900*target.length,withPitch:wantPitch,
+    onInterim:h=>{const al=align(target,h);al.forEach((x,k)=>{const e=W(el,c.s,c.a+k);e&&e.classList.toggle('live',x.score>=0.75);});}});
+  P.busy=false;btn.classList.remove('live');$('span',btn).textContent='อ่าน';
+  ws.forEach((w,k)=>{const e=W(el,c.s,c.a+k);e&&e.classList.remove('live');});
+  if(r.error&&r.error!=='audio-capture'){$('#pFeed').innerHTML=`<b>${esc(srErrorText(r.error))}</b>`;return;}
+  if(!r.hyp.length){$('#pFeed').innerHTML='<b>ไม่ได้ยินเสียงอ่าน</b> <span class="fine">ลองพูดให้ดังและใกล้ไมค์ขึ้นอีกนิด</span>';return;}
+  const al=align(target,r.hyp);let ok=0;const wrong=[];
+  al.forEach((x,k)=>{const e=W(el,c.s,c.a+k);const cls=x.score>=0.9?'ok':x.score>=0.75?'near':'bad';e&&e.classList.add(cls);
+    if(x.score>=0.75)ok++;else wrong.push({w:ws[k],heard:x.heard});});
+  const score=Math.round(ok/target.length*100);
+  let html=`<div style="display:flex;gap:16px;align-items:baseline;flex-wrap:wrap"><span class="score" style="color:var(${score>=70?'--ok':'--bad'})">${score}%</span>
+    <span class="heard">ระบบได้ยิน: “${esc(r.text)}”</span></div>`;
+  if(wrong.length)html+=`<div style="margin-top:8px"><span class="fine">คำที่ต้องแก้ (แตะเพื่อฟัง):</span><div class="chips" style="margin-top:6px">${
+    wrong.map(x=>`<button type="button" class="chip" data-say="${esc(x.w.raw)}">${SPEAK_ICON}${esc(x.w.raw)}${x.heard?` <small style="color:var(--muted)">≠ ${esc(x.heard)}</small>`:''}</button>`).join('')}</div></div>`;
+  else html+=`<div style="margin-top:6px;color:var(--ok);font-weight:600">ชัดเจนทุกคำ ไปส่วนถัดไปได้เลย</div>`;
+  if(wantPitch&&r.pitch){const it=intonationScore(r.pitch,S.type);if(it){const exp=S.type==='rise'?'ขึ้น ↗':'ลง ↘';
+    const got=it.end==='rise'?'ขึ้น ↗':it.end==='fall'?'ลง ↘':'ราบ →';
+    html+=`<div style="margin-top:8px">Intonation <b>${it.score}%</b> <span class="fine">· ท้ายประโยคควร${exp} · ของเรา${got}${it.sd<1?' · ลองให้เสียงมีขึ้น-ลงมากขึ้น อย่าอ่านเสียงเดียว':''}</span></div>`;}}
+  $('#pFeed').innerHTML=html;
+  if(score>=40){const set=new Set(prog.cover);ws.forEach(w=>set.add(c.s+':'+w.wi));prog.cover=[...set];
+    if(set.size>=D.total){prog.rounds++;prog.cover=[];toast(`ฝึกครบรอบที่ ${prog.rounds} แล้ว`+(prog.rounds>=cfg.minPractice?' ไปสอบได้':''),3200);}
+    saveProg();updateSteps();}}
+
+/* ---------------- STEP 3: test ---------------- */
+let T={running:false};let wakeLock=null;
+function buildItems(){let order=D.sentences.map(s=>s.i);
+  if(cfg.shuffle){for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}}
+  const items=order.map(s=>({k:'s',s}));const n=Math.min(cfg.liveness|0,3,Math.max(0,items.length-1));
+  for(let q=0;q<n;q++){const pos=1+Math.floor(Math.random()*(items.length-1));items.splice(pos,0,{k:'live',num:11+Math.floor(Math.random()*88)});}
+  return items;}
+async function beginTest(){
+  if(!SR){$('#tIntroMsg').textContent=srErrorText('unsupported');return;}
+  const ok=await Mic.open();
+  if(!ok&&Mic.denied==='NotAllowedError'){$('#tIntroMsg').textContent=srErrorText('not-allowed');return;}
+  TTS.stop();TTS.locked=true;
+  T={running:true,items:buildItems(),idx:0,res:{},live:[],flags:{tab:0,slow:0,retry:0},retried:false,start:Date.now(),pitchOff:!Mic.ok()};
+  T.recording=Mic.startRec();
+  try{if(navigator.wakeLock)wakeLock=await navigator.wakeLock.request('screen');}catch(e){}
+  Mic.onLevel=l=>{$('#tLevel').style.width=Math.min(100,l*900)+'%';};
+  $('#tIntro').hidden=true;$('#tRun').hidden=false;updateSteps();renderItem();}
+function renderItem(){const it=T.items[T.idx];const nS=T.items.filter(x=>x.k==='s').length;
+  const doneS=T.items.slice(0,T.idx).filter(x=>x.k==='s').length;
+  $('#tPos').textContent=`ข้อ ${T.idx+1}/${T.items.length}`;$('#tBar').style.width=(T.idx/T.items.length*100)+'%';
+  const tt=$('#tText');tt.classList.add('veil');
+  if(it.k==='s'){$('#tLabel').textContent=`ประโยคที่ ${doneS+1} จาก ${nS}`;tt.textContent=D.sentences[it.s].text.replace(/[A-Za-z]/g,'x');}
+  else{$('#tLabel').textContent='จุดตรวจ: พูดตัวเลขที่จะปรากฏเป็นภาษาอังกฤษ';tt.innerHTML='<span class="num">00</span>';}
+  $('#tGo').hidden=false;$('#tGo').textContent=T.retried?'อ่านข้อนี้อีกครั้ง':'เริ่มอ่าน';$('#tDone').hidden=true;
+  $('#tTime').style.transition='none';$('#tTime').style.transform='scaleX(1)';
+  if(!T.retried)$('#tMsg').textContent='กดปุ่มแล้วอ่านทันที';}
+async function runItem(){const it=T.items[T.idx];$('#tGo').hidden=true;$('#tDone').hidden=false;
+  const tt=$('#tText');tt.classList.remove('veil');let target,maxMs;
+  if(it.k==='s'){const S=D.sentences[it.s];tt.textContent=S.text;target=S.words.map(w=>w.n);maxMs=5000+1000*target.length;}
+  else{tt.innerHTML=`<span class="num">${it.num}</span>`;target=[numWords(it.num)];maxMs=7000;}
+  const tm=$('#tTime');requestAnimationFrame(()=>{tm.style.transition=`transform ${maxMs}ms linear`;tm.style.transform='scaleX(0)';});
+  $('#tMsg').textContent='กำลังฟัง…';
+  const r=await listenSafe(target,{maxMs,withPitch:it.k==='s',onInterim:h=>{
+    if(it.k==='s'){const n=align(target,h).filter(x=>x.score>=0.75).length;$('#tMsg').textContent=`กำลังฟัง… (ได้ยินแล้ว ${n} คำ)`;}}});
+  $('#tDone').hidden=true;if(!T.running)return;
+  if(r.error&&r.error!=='audio-capture'){$('#tMsg').textContent=srErrorText(r.error);tt.classList.add('veil');$('#tGo').hidden=false;$('#tGo').textContent='ลองข้อนี้ใหม่';return;}
+  if(!r.hyp.length&&!T.retried){T.retried=true;T.flags.retry++;$('#tMsg').textContent='ไม่ได้ยินเสียงอ่าน กดอ่านข้อนี้ใหม่ได้ 1 ครั้ง';renderItem();return;}
+  T.retried=false;
+  if(it.k==='s'){const S=D.sentences[it.s];const al=align(target,r.hyp);
+    const into=r.pitch?intonationScore(r.pitch,S.type):null;
+    T.res[it.s]={al,heard:r.text,into,latency:r.latency,dur:r.dur};if(r.latency!==null&&r.latency>6000)T.flags.slow++;}
+  else{const joined=r.hyp.join('');T.live.push({num:it.num,ok:joined.includes(numWords(it.num)),heard:r.text});}
+  T.idx++;$('#tMsg').textContent='บันทึกแล้ว';
+  if(T.idx>=T.items.length)finishTest();else setTimeout(renderItem,450);}
+async function finishTest(){
+  T.running=false;TTS.locked=false;Mic.onLevel=null;
+  const blob=T.recording?await Mic.stopRec():null;Mic.release();Mic.disabled=false;
+  try{wakeLock&&wakeLock.release();}catch(e){}wakeLock=null;
+  let ok=0,total=0,sumDur=0;const wrong=new Map();const perS=[];const intos=[];
+  for(const S of D.sentences){const r=T.res[S.i];const st=[];
+    S.words.forEach((w,k)=>{total++;const x=r?r.al[k]:{score:0,heard:''};st.push(x.score>=0.9?'ok':x.score>=0.75?'near':'bad');
+      if(x.score>=0.75)ok++;else{const e=wrong.get(w.n)||{word:w.raw,count:0,heard:[]};e.count++;if(x.heard&&!e.heard.includes(x.heard))e.heard.push(x.heard);wrong.set(w.n,e);}});
+    if(r){sumDur+=r.dur;if(r.into)intos.push(r.into.score);}
+    perS.push({st,into:r&&r.into?{score:r.into.score,end:r.into.end}:null,type:S.type});}
+  const pron=Math.round(ok/Math.max(1,total)*100);
+  const inton=intos.length>=Math.max(1,Math.ceil(D.sentences.length/2))?Math.round(intos.reduce((a,b)=>a+b,0)/intos.length):null;
+  const wpm=sumDur>3000?Math.round(total/(sumDur/60000)):null;
+  const flags=[];
+  const liveFail=T.live.filter(x=>!x.ok);
+  if(T.live.length)flags.push({warn:liveFail.length>0,t:liveFail.length?`จุดตรวจตัวเลขไม่ผ่าน ${liveFail.length}/${T.live.length} ครั้ง (ระบบได้ยิน: ${liveFail.map(x=>`${x.num}→“${x.heard||'-'}”`).join(', ')})`:`จุดตรวจตัวเลขผ่าน ${T.live.length}/${T.live.length}`});
+  if(T.flags.tab)flags.push({warn:true,t:`ออกจากหน้าสอบระหว่างสอบ ${T.flags.tab} ครั้ง`});
+  if(T.flags.slow>=2)flags.push({warn:true,t:`เริ่มอ่านช้ากว่า 6 วินาทีหลังข้อความปรากฏ ${T.flags.slow} ประโยค`});
+  if(wpm&&wpm>180&&pron>=97)flags.push({warn:true,t:`อ่านเร็ว (${wpm} คำ/นาที) และแม่นยำเกือบ 100% ผิดปกติสำหรับระดับชั้น ควรฟังไฟล์เสียง`});
+  if(T.flags.retry)flags.push({warn:false,t:`ขออ่านซ้ำเพราะระบบไม่ได้ยิน ${T.flags.retry} ครั้ง`});
+  if(inton===null)flags.push({warn:false,t:'อุปกรณ์นี้วัด intonation ไม่ได้ ตัดสินจาก pronunciation อย่างเดียว'});
+  if(!blob)flags.push({warn:true,t:'ไม่มีไฟล์เสียงการสอบ (เบราว์เซอร์ไม่รองรับการบันทึก)'});
+  const review=flags.some(f=>f.warn);
+  const pass=pron>=cfg.passPron&&(inton===null||inton>=cfg.passInt);
+  prog.attempts++;const ts=new Date();
+  const code=hashStr([student.name,student.cls,student.no,pron,inton,ts.getTime(),cfgHash].join('|')).slice(0,6).toUpperCase();
+  const result={pron,inton,wpm,pass,review,flags,perS,wrong:[...wrong.values()].sort((a,b)=>b.count-a.count),
+    attempt:prog.attempts,at:ts.toISOString(),code,mins:Math.round((Date.now()-T.start)/600)/100};
+  prog.last=result;saveProg();
+  currentView='result';$$('.view').forEach(v=>v.hidden=v.id!=='v-result');updateSteps();window.scrollTo(0,0);
+  renderResult(result,blob);sendResult(result,blob);}
+function renderResult(R,blob){
+  const v=$('#rVerdict');const k=R.pass?(R.review?'review':'pass'):'fail';v.className='verdict '+k;
+  v.innerHTML=(R.pass?(R.review?'ผ่าน (รอครูตรวจ)':'ผ่าน'):'ยังไม่ผ่าน')+`<small>${esc(student.name)} · ${esc(student.cls)} เลขที่ ${esc(student.no)} · สอบครั้งที่ ${R.attempt}</small>`;
+  const box=(lab,val,pass,unit,note)=>`<div class="sbox ${val===null?'':(pass?'ok':'no')}"><span>${lab}</span><b>${val===null?'–':val+unit}</b><em>${note}</em></div>`;
+  $('#rScores').innerHTML=box('Pronunciation',R.pron,R.pron>=cfg.passPron,'%',`เกณฑ์ ${cfg.passPron}%`)+
+    box('Intonation',R.inton,R.inton!==null&&R.inton>=cfg.passInt,'%',R.inton===null?'วัดไม่ได้':`เกณฑ์ ${cfg.passInt}%`)+
+    `<div class="sbox"><span>ความเร็ว</span><b>${R.wpm??'–'}</b><em>คำ/นาที</em></div>`;
+  $('#rMeta').innerHTML=`<span>รหัสยืนยันผล <b>${R.code}</b></span><span>${new Date(R.at).toLocaleString('th-TH')}</span><span>ใช้เวลาสอบ ${R.mins} นาที</span>`;
+  const el=$('#rPassage');renderPassage(el);
+  R.perS.forEach((p,si)=>{p.st.forEach((c,wi)=>{const e=W(el,si,wi);e&&e.classList.add(c);});
+    const sp=el.querySelector(`.s[data-s="${si}"]`);if(sp&&p.into){const want=p.type==='rise'?'↗':'↘';const got=p.into.end==='rise'?'↗':p.into.end==='fall'?'↘':'→';
+      sp.insertAdjacentHTML('beforeend',`<span class="ibadge ${p.into.score>=cfg.passInt?'good':'weak'}" title="ควร ${want} · อ่านได้ ${got}">${got} ${p.into.score}</span>`);}});
+  $('#rWrong').innerHTML=R.wrong.length?R.wrong.slice(0,30).map(x=>`<li><div><span class="wd">${esc(x.word)}</span>${x.count>1?` <small style="display:inline">×${x.count}</small>`:''}
+    <small>${x.heard.length?'ระบบได้ยินเป็น: '+esc(x.heard.join(', ')):'ไม่ได้ยินคำนี้ (อ่านข้ามหรือเบาเกินไป)'}</small></div>
+    <button type="button" data-say="${esc(x.word)}" aria-label="ฟังคำว่า ${esc(x.word)}">${SPEAK_ICON}</button></li>`).join(''):'<li>ออกเสียงถูกทุกคำ ยอดเยี่ยม</li>';
+  $('#rFlags').innerHTML=R.flags.length?R.flags.map(f=>`<li class="${f.warn?'warn':''}">${esc(f.t)}</li>`).join(''):'<li>ไม่พบสิ่งผิดปกติ</li>';
+  const au=$('#rAudio');if(blob){au.src=URL.createObjectURL(blob);au.hidden=false;}else if(!au.src)au.hidden=true;}
+function sendResult(R,blob){const out=$('#rSend');
+  if(isPreview){out.textContent='โหมดทดลองของครู: ไม่ส่งผลเข้า Google Sheets';return;}
+  if(!cfg.sheetUrl){out.textContent='แจ้งผลกับครูด้วยรหัสยืนยันด้านบน';return;}
+  const payload={timestamp:R.at,title:cfg.title,name:student.name,cls:student.cls,no:student.no,attempt:R.attempt,
+    pron:R.pron,inton:R.inton,wpm:R.wpm,result:R.pass?(R.review?'ผ่าน (รอครูตรวจ)':'ผ่าน'):'ไม่ผ่าน',
+    wrongWords:R.wrong.map(x=>x.word+(x.heard.length?`(${x.heard.join('/')})`:'')).join(', '),
+    flags:R.flags.filter(f=>f.warn).map(f=>f.t).join(' | '),code:R.code,config:cfgHash,minutes:R.mins};
+  const post=body=>fetch(cfg.sheetUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
+  out.textContent='กำลังส่งผลให้ครู…';
+  const go=()=>post(payload).then(()=>{out.textContent=`ส่งผลให้ครูแล้ว · รหัสยืนยัน ${R.code}`;}).catch(()=>{out.textContent='ส่งผลไม่สำเร็จ (ตรวจอินเทอร์เน็ต) แจ้งรหัสยืนยันกับครูแทน';});
+  if(cfg.sendAudio&&blob&&blob.size<6e6){const fr=new FileReader();fr.onload=()=>{payload.audio=String(fr.result).split(',')[1];payload.audioMime=blob.type;go();};fr.onerror=go;fr.readAsDataURL(blob);}
+  else go();}
+
+/* ---------------- teacher ---------------- */
+const GS_CODE=`function doPost(e) {
+  var d = JSON.parse(e.postData.contents);
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('ReadingTest') || ss.insertSheet('ReadingTest');
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(['เวลา','บทความ','ชื่อ','ห้อง','เลขที่','ครั้งที่','Pronunciation','Intonation','ผล','คำ/นาที','คำที่ออกเสียงผิด','ข้อสังเกต','รหัสยืนยัน','รหัสชุดตั้งค่า','ไฟล์เสียง']);
+  }
+  var audioUrl = '';
+  if (d.audio) {
+    var it = DriveApp.getFoldersByName('ReadingTest Audio');
+    var folder = it.hasNext() ? it.next() : DriveApp.createFolder('ReadingTest Audio');
+    var ext = (d.audioMime || '').indexOf('mp4') > -1 ? '.m4a' : '.webm';
+    var blob = Utilities.newBlob(Utilities.base64Decode(d.audio), d.audioMime || 'audio/webm',
+      d.cls + '_' + d.no + '_' + d.name + '_' + d.attempt + ext);
+    audioUrl = folder.createFile(blob).getUrl();
+  }
+  sh.appendRow([new Date(d.timestamp), d.title, d.name, d.cls, d.no, d.attempt, d.pron,
+    d.inton === null ? '' : d.inton, d.result, d.wpm || '', d.wrongWords, d.flags, d.code, d.config, audioUrl]);
+  return ContentService.createTextOutput('ok');
+}`;
+function readForm(){const n=(id,d,lo,hi)=>{const v=parseInt($(id).value,10);return isNaN(v)?d:clamp(v,lo,hi);};
+  return {title:$('#fTitle').value.trim()||'Reading Test',text:$('#fText').value.trim(),level:$('#fLevel').value.trim(),
+    passPron:n('#fPassPron',70,0,100),passInt:n('#fPassInt',70,0,100),minListen:n('#fMinListen',2,0,10),minPractice:n('#fMinPractice',2,0,10),
+    liveness:n('#fLive',2,0,3),voiceLang:$('#fLang').value,shuffle:$('#fShuffle').checked,sheetUrl:$('#fSheet').value.trim(),sendAudio:$('#fAudio').checked};}
+function writeForm(c){$('#fTitle').value=c.title;$('#fText').value=c.text;$('#fLevel').value=c.level||'';$('#fPassPron').value=c.passPron;$('#fPassInt').value=c.passInt;
+  $('#fMinListen').value=c.minListen;$('#fMinPractice').value=c.minPractice;$('#fLive').value=c.liveness;$('#fLang').value=c.voiceLang;
+  $('#fShuffle').checked=!!c.shuffle;$('#fSheet').value=c.sheetUrl||'';$('#fAudio').checked=!!c.sendAudio;}
+function teacherPreview(){const c=readForm();const d=buildDoc(c.text);store.set('rt:draft',c);
+  const mins=d.total/(150*0.8);
+  $('#tStats').innerHTML=`<div><b>${d.sentences.length}</b><span>ประโยค</span></div><div><b>${d.total}</b><span>คำ</span></div><div><b>${mins<1?'<1':mins.toFixed(1)}</b><span>นาที / รอบฟัง</span></div><div><b>${buildChunks(d.sentences,'phrase').length}</b><span>วลีสำหรับฝึก</span></div>`;
+  $('#tSents').innerHTML=d.sentences.map(s=>`<li>${esc(s.text)}${s.type==='rise'?'<span class="tag rise">↗ เสียงขึ้น</span>':s.text.includes('?')?'<span class="tag rise">↘ Wh-question</span>':''}${s.words.length>25?'<span class="tag warn">ยาว ควรแบ่ง</span>':''}</li>`).join('')||'<li class="fine">วางบทความทางซ้าย</li>';}
+function renderLib(){const lib=store.get('rt:lib',[]);
+  $('#tLib').innerHTML=lib.length?lib.map((x,i)=>`<li><span>${esc(x.title)}</span><span style="display:flex;gap:10px"><button type="button" data-load="${i}">เปิด</button><button type="button" data-del="${i}" style="color:var(--bad)">ลบ</button></span></li>`).join(''):'<li class="fine">ยังไม่มี กด “สร้างลิงก์” แล้วบทความจะถูกบันทึกที่นี่</li>';}
+function saveToLib(c){const lib=store.get('rt:lib',[]).filter(x=>x.title!==c.title);lib.unshift(c);store.set('rt:lib',lib.slice(0,30));renderLib();}
+function makeLink(){const c=readForm();if(buildDoc(c.text).total<3){toast('ใส่บทความก่อน');return;}
+  saveToLib(c);const url=location.href.split('#')[0]+'#t='+b64e(JSON.stringify(c));
+  $('#linkBox').value=url;$('#linkOut').hidden=false;
+  $('#linkNote').textContent=location.protocol==='file:'?'ตอนนี้เปิดจากไฟล์ในเครื่อง ลิงก์นี้ใช้กับนักเรียนไม่ได้ ให้อัปโหลดไฟล์นี้ขึ้น Netlify Drop ก่อน แล้วสร้างลิงก์จากหน้าเว็บนั้น':
+    'ส่งลิงก์นี้ให้นักเรียน (Google Classroom / LINE) · ทำ QR Code จากลิงก์นี้ให้นักเรียนสแกนได้';}
+function copyText(text,okMsg){const done=()=>toast(okMsg);
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done).catch(()=>fallback());else fallback();
+  function fallback(){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){toast('คัดลอกไม่ได้ เลือกข้อความแล้วคัดลอกเอง');}ta.remove();}}
+
+/* ---------------- boot ---------------- */
+function loadArticle(c){cfg=Object.assign({},SAMPLE,c);cfgHash=hashStr(JSON.stringify(c));D=buildDoc(cfg.text);
+  $('#artTitle').textContent=cfg.title;renderPassage($('#lPassage'));renderPassage($('#pPassage'));
+  P.idx=0;P.chunks=[];setMode(P.mode);Listen.next=0;Listen.active=false;fillVoices();}
+function openWelcome(){student=null;updateSteps();
+  $('#wTitle').textContent=cfg.title;
+  $('#wMeta').textContent=`${cfg.level?cfg.level+' · ':''}${D.sentences.length} ประโยค · ${D.total} คำ`;
+  $('#wHow').innerHTML=`<li><b>1 · ฟัง</b><small>ฟังเสียงตัวอย่างพร้อมไฮไลต์ อย่างน้อย ${cfg.minListen} รอบ ฟังซ้ำได้ไม่จำกัด</small></li>
+    <li><b>2 · อ่านตาม</b><small>ฝึกทีละคำ วลี หรือประโยค อย่างน้อย ${cfg.minPractice} รอบ ระบบบอกคำที่ต้องแก้ทันที</small></li>
+    <li><b>3 · สอบ</b><small>อ่านเองทั้งหมด ไม่มีเสียงช่วย ผ่านเมื่อได้ ${cfg.passPron}% ขึ้นไป</small></li>`;
+  const who=store.get('rt:who',{});$('#sName').value=who.name||'';$('#sClass').value=who.cls||'';$('#sNo').value=who.no||'';
+  currentView='welcome';$$('.view').forEach(v=>v.hidden=v.id!=='v-welcome');}
+function startStudent(){const name=$('#sName').value.trim(),cls=$('#sClass').value.trim(),no=$('#sNo').value.trim();
+  if(!name||!cls||!no){toast('กรอกชื่อ ห้อง และเลขที่ให้ครบ');return;}
+  student={name,cls,no};store.set('rt:who',student);loadProg();
+  show(prog.last&&!isPreview?'result':unlocked('test')&&prog.rounds>=cfg.minPractice&&prog.listens>=cfg.minListen?'test':unlocked('practice')?'practice':'listen');}
+function openTeacher(){isPreview=false;student=null;$('#hTeacher').hidden=true;updateSteps();
+  writeForm(store.get('rt:draft',null)||SAMPLE);teacherPreview();renderLib();$('#linkOut').hidden=true;
+  $('#artTitle').textContent='โหมดครู · ตั้งค่าบทความ';currentView='teacher';$$('.view').forEach(v=>v.hidden=v.id!=='v-teacher');}
+
+function boot(){
+  fillRates();$('#gsCode').textContent=GS_CODE;
+  if(synth){synth.onvoiceschanged=()=>{if(cfg)fillVoices();};}
+  const miss=[];if(!SR)miss.push('การฟังเสียงพูด');if(!synth)miss.push('เสียงอ่านตัวอย่าง');
+  if(miss.length){const b=$('#banner');b.hidden=false;b.textContent=`เบราว์เซอร์นี้ไม่รองรับ${miss.join(' และ ')} — กรุณาเปิดด้วย Google Chrome หรือ Microsoft Edge (iPad: เปิด Siri และการป้อนตามคำบอกในการตั้งค่า)`;}
+  const m=location.hash.match(/[#&]t=([A-Za-z0-9_-]+)/);
+  if(m){try{const c=JSON.parse(b64d(m[1]));studentMode=true;loadArticle(c);openWelcome();return;}catch(e){toast('ลิงก์ไม่ถูกต้อง ขอลิงก์ใหม่จากครู',5000);}}
+  loadArticle(store.get('rt:draft',null)||SAMPLE);openTeacher();}
+
+/* events */
+$('#steps').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;show(b.dataset.step);});
+$('#hTeacher').onclick=()=>{if(T.running)return;openTeacher();};
+$('#bStart').onclick=startStudent;
+$('#lPlay').onclick=playAll;
+$('#lStop').onclick=()=>{Listen.active=false;Listen.next=0;TTS.stop();renderListenBtn();};
+$('#lVoice').onchange=e=>{TTS.voice=TTS.list()[+e.target.value]||null;};
+$('#lPassage').addEventListener('click',e=>{const s=e.target.closest('.s');if(!s)return;Listen.active=false;Listen.next=0;renderListenBtn();
+  const i=+s.dataset.s;speakRange($('#lPassage'),i,0,D.sentences[i].words.length-1);});
+$('#lNext').onclick=()=>show('practice');
+$('#pMode').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!P.busy)setMode(b.dataset.mode);});
+$('#pPrev').onclick=()=>{if(P.busy)return;TTS.stop();P.idx=Math.max(0,P.idx-1);showChunk();};
+$('#pNext').onclick=()=>{if(P.busy)return;TTS.stop();P.idx=Math.min(P.chunks.length-1,P.idx+1);showChunk();};
+$('#pHear').onclick=practiceHear;$('#pRead').onclick=practiceRead;
+$('#pPassage').addEventListener('click',e=>{const w=e.target.closest('.w');if(!w||P.busy)return;const s=+w.dataset.s,k=+w.dataset.w;
+  const i=P.chunks.findIndex(c=>c.s===s&&c.a<=k&&c.b>=k);if(i>=0){TTS.stop();P.idx=i;showChunk();}});
+$('#pGo').onclick=()=>show('test');
+$('#bBeginTest').onclick=beginTest;$('#tGo').onclick=runItem;$('#tDone').onclick=()=>{activeStop&&activeStop();};
+$('#rRetry').onclick=()=>{prog.last=null;saveProg();show('test');};
+$('#rPractice').onclick=()=>show('practice');
+document.addEventListener('click',e=>{const b=e.target.closest('[data-say]');if(b&&!TTS.locked){TTS.say(b.dataset.say);}});
+$('#tForm').addEventListener('input',()=>{clearTimeout(teacherPreview._t);teacherPreview._t=setTimeout(teacherPreview,250);});
+$('#bLink').onclick=makeLink;$('#bCopy').onclick=()=>copyText($('#linkBox').value,'คัดลอกลิงก์แล้ว');
+$('#bCopyCode').onclick=()=>copyText(GS_CODE,'คัดลอกโค้ด Apps Script แล้ว');
+$('#bPreview').onclick=()=>{const c=readForm();if(buildDoc(c.text).total<3){toast('ใส่บทความก่อน');return;}
+  loadArticle(c);isPreview=true;$('#hTeacher').hidden=false;openWelcome();toast('โหมดทดลอง: กดข้ามขั้นได้ และไม่ส่งผลเข้าชีต');};
+$('#tLib').addEventListener('click',e=>{const lib=store.get('rt:lib',[]);const l=e.target.closest('[data-load]'),d=e.target.closest('[data-del]');
+  if(l){writeForm(Object.assign({},SAMPLE,lib[+l.dataset.load]));teacherPreview();}
+  if(d){lib.splice(+d.dataset.del,1);store.set('rt:lib',lib);renderLib();}});
+/* integrity signals during the test */
+let lastAway=0;const away=()=>{if(!T.running)return;const now=Date.now();if(now-lastAway<1500)return;lastAway=now;T.flags.tab++;
+  setTimeout(()=>toast(`ระบบบันทึกว่าออกจากหน้าสอบแล้ว ${T.flags.tab} ครั้ง`,3500),300);};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)away();});
+window.addEventListener('blur',away);
+['copy','cut','contextmenu'].forEach(ev=>document.addEventListener(ev,e=>{if(T.running)e.preventDefault();}));
+window.addEventListener('beforeunload',e=>{if(T.running){e.preventDefault();e.returnValue='';}});
+boot();
+</script>
+</body>
+</html>
